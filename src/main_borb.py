@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append('../src_oob_pool')
+sys.path.append('../src')
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow.compat.v1 as tf
@@ -11,8 +11,8 @@ tf.disable_v2_behavior()
 from latency_data import LatencyData
 import numpy as np
 import pandas as pd
-
-from run_main_jit_sdp_oob_pool import run
+from utils import * 
+from helper_borb import run
 from class_nn_standard import NN_standard
 
 from time import sleep
@@ -55,11 +55,11 @@ def main():
     times = 30_000  # time steps per repetition
 
     # Dataset
-    dataset = 'nova'  # 
+    dataset = 'npm'  # 
     target = 'class'
 
     # class imbalanace method
-    method = 'oob_pool_single'  # 
+    method = 'borb'  # oob_pool_single
 
     # fixed - do not alter the following
 
@@ -77,8 +77,12 @@ def main():
     # Settings B: parameters ~ model:dataset:baseline {nova:mlp:} # from dissertation {Dinaldo}
     #############################
 
-    # waiting time wt << days to verification latency |  borb-waiting-time = (90, 91, 180)
-    waiting_time = 91   
+    params = None
+
+    if method == 'borb':
+        params = load_params('borb_params.json')
+        params = params['borb_params'][0]
+
     #############################
     #  #
     #############################
@@ -114,7 +118,7 @@ def main():
     # output filenames
     out_name = method
     if method == 'borb' :
-        out_name += str(borb_window_size)
+        out_name += str(params["borb_window_size"])
 
     filename_recalls = out_name + '_preq_recalls' + '.txt'
     filename_specificities = out_name + '_preq_specificities' + '.txt'
@@ -136,21 +140,31 @@ def main():
 
     # Dataset dirs
     dataset_dir = ''    # init
-    if dataset == 'nova':
-        dataset_dir = os.path.join(BASE_PATH_DIR,"nova_preprocess.csv")
-    elif dataset == 'nova':
-        dataset_dir = os.path.join(BASE_PATH_DIR,"nova_preprocess.csv")
 
+    dataset_dir = os.path.join(BASE_PATH_DIR,dataset+"_preprocess.csv")
+
+    # if dataset == 'nova':
+    #     dataset_dir = os.path.join(BASE_PATH_DIR,"nova_preprocess.csv")
+    # elif dataset == 'nova':
+    #     dataset_dir = os.path.join(BASE_PATH_DIR,"nova_preprocess.csv")
+           
 
     #############################################
-    # Generate stream with verification latency #           
     #############################################
-    stream = LatencyData(dataset_dir,91,96,True) 
+    # Generate stream with verification latency #
 
-    df = stream.load_data_with_latency()
+    if params != None:
+        stream = LatencyData(dataset_dir, params['waiting_time'], params['borb_ps_size'] ,True) 
+        df = stream.load_data_with_latency()
+        times = df[df.code==0].shape[0]# time steps per repetition. Number of instances 
+        print('Numero de Time steps',times)
+    else:
+        raise ValueError("Impossible set stream with params values None.")    
 
-    times = df[df.code==0].shape[0]# time steps per repetition. Number of instances 
-    print('Numero de Time steps',times)
+    
+
+    
+    
 
     #########
     # Start #
@@ -188,7 +202,8 @@ def main():
                 )
 
         # start
-        recall, specificity, gmean = run(random_state,times, df, models, method, preq_fading_factor, layer_dims,delayed_forget_rate,target)
+        recall, specificity, gmean = run(random_state,times, df, models, method, preq_fading_factor, layer_dims,delayed_forget_rate,
+                                        target,params)
 
         # store
         if flag_store:

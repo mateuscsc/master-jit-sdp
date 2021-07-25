@@ -1,6 +1,6 @@
 import numpy as np
-from class_models import Baseline ,OOB_POOL
-
+from class_models import Baseline 
+from class_borb import BORB
 from time import sleep
 from copy import copy
 ###########################################################################################
@@ -40,7 +40,7 @@ def read_new_instance(df):#,time_elapsed):
 ###########################################################################################
 
 
-def run(random_state, time_steps, df, models, method, preq_fading_factor, layer_dims,delayed_forget_rate,target):
+def run(random_state, time_steps, df, models, method, preq_fading_factor, layer_dims,delayed_forget_rate,target,params):
 
     
     
@@ -71,8 +71,10 @@ def run(random_state, time_steps, df, models, method, preq_fading_factor, layer_
     technique = Baseline(models[0])     # Baseline init 
 
     # State-of-the-art
-    if method == 'oob_pool_single' or method == 'oob_pool':
-        technique = OOB_POOL(models)
+    
+    if method == 'borb' :
+        technique = BORB(models[0],params["borb_window_size"], params["borb_lo"], params["borb_l1"],
+                        params["borb_fr1"], params["borb_m"], params["borb_sample_size"] , params["borb_ps_size"])    
 
     
    
@@ -119,6 +121,15 @@ def run(random_state, time_steps, df, models, method, preq_fading_factor, layer_
             t += 1
             y_hat_score, y_hat_class = technique.predict(x)
 
+            #update scores 'C' | BORB
+            technique.update_scores_predict(y_hat_score)
+
+            # update threshold | BORB
+            technique.update_threshold()
+
+            # predict | BORB
+            y_hat_class = technique.compute_predict_score(y_hat_score,th=True)
+
 
             #######################
             # Update preq metrics #
@@ -152,28 +163,44 @@ def run(random_state, time_steps, df, models, method, preq_fading_factor, layer_
             delayed_size_pos = update_delayed_metric(delayed_size_pos, not example_neg, delayed_forget_rate)    
 
 
-        elif code == 1 :
-            if  example_neg:
-                technique.train(x, y)
-                
-                
-            else:
-                technique.append_to_pool_defect_induncing(next)   
+        
+        ###############
+        # BORB #
+        ###############
 
-                # Calculate class imbalance rate
-                imbalance_rate = 1.0
-                if (not example_neg) and (delayed_size_pos < delayed_size_neg) and (delayed_size_pos != 0.0):
-                    imbalance_rate = delayed_size_neg / delayed_size_pos
-                elif example_neg and (delayed_size_neg < delayed_size_pos) and (delayed_size_neg != 0.0):
-                    imbalance_rate = delayed_size_pos / delayed_size_neg
+        if method == 'borb' :
+            technique.append_to_hist_data(next)
 
-                #print('delayed_size_pos',delayed_size_pos,'   delayed_size_neg',delayed_size_neg)    
 
-                # OOBPool oversample
-                technique.oob_oversample(random_state, imbalance_rate) 
+        
 
-                technique.train(x, y)
-                
+        if code == 1 :
+            if technique.is_trainable(t): #  :: time elapsed at the moment (instance)
+                technique.restart_model()
+
+                for i in range(51):
+                    # Generate Weighted Sample
+                    x, y = technique.get_training_set()
+
+                    ####################
+                    # Train classifier #
+                    ####################
+                    technique.train(x, y)
+
+                    # predict
+                    y_hat_score, y_hat_class = technique.predict(x)
+
+                    #update scores 'C'
+                    technique.update_scores_predict(y_hat_score)
+
+                    # update ir1
+                    technique.update_induced_defect_predict_rate()
+
+                    # update boosting factor
+                    technique.update_boosting_factors()
+
+                    # update probs class
+                    technique.update_class_probability()
                 
 
         

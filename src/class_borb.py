@@ -170,6 +170,8 @@ class BORB(Baseline):
 
     def is_trainable(self,time_elapsed):
         if ( (self.df_neg.shape[0] >1) and (self.df_pos.shape[0] >1) ):
+
+            
             if (time_elapsed // self.borb_ps_size ) > self.ps_step :
                 self.ps_step += 1
                 self.enable_train = True

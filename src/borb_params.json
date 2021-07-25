@@ -1,0 +1,35 @@
+{
+    "borb_params": [
+        {
+            "borb_fr1": 0.38,
+            "borb_l1": 1.24,
+            "borb_lo": 2.02,
+            "borb_m": 2.03,
+            "borb_ps_size": 96,
+            "borb_sample_size": 1207,
+            "borb_window_size": 142,
+            "class_weights": {
+                "0": 1.0,
+                "1": 1.0
+            },
+            "dataset": "npm",
+            "layer_dims": [
+                14,
+                8,
+                1
+            ],
+            "loss_function": "binary_crossentropy",
+            "mlp_batch_size": 131,
+            "mlp_dropout_h_layer": 0.42,
+            "mlp_dropout_input_layer": 0.14,
+            "mlp_h_layers_size": 14,
+            "mlp_learning_rate": 0.0008,
+            "mlp_log_transformation": true,
+            "mlp_n_epochs": 51,
+            "mlp_nhidden_layers": 3,
+            "output_activation": "sigmoid",
+            "waiting_time": 91,
+            "weight_init": "he"
+        }
+    ]
+}
