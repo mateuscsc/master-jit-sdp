@@ -2,9 +2,9 @@
 
 from keras.models import Model
 from class_nn_base import NN_base
-from keras.optimizers import Adam
+from keras.optimizers import Adam,SGD
 from keras.regularizers import l2
-from keras.layers import Input, Dense, LeakyReLU, BatchNormalization
+from keras.layers import Input, Dense, LeakyReLU, BatchNormalization , Dropout, ReLU
 
 ###########################################################################################
 #                                     Standard NN class                                   #
@@ -54,7 +54,7 @@ class NN_standard(NN_base):
 
         # configure model for training
         self.model.compile(
-            optimizer=Adam(lr=self.learning_rate),
+            optimizer=Adam(lr=self.learning_rate), #SGD(lr=self.learning_rate,nesterov=False),       #Adam(lr=self.learning_rate),
             loss=self.loss_function,
             metrics=['accuracy']
         )
@@ -84,6 +84,12 @@ class NN_standard(NN_base):
         )(X_input)
         if self.flag_batchnorm:
             X = BatchNormalization()(X)
+
+        ### Dropout ####
+        # TODO flagdropout
+        #################
+        X = Dropout(0.14)(X)  
+
         X = LeakyReLU(alpha=0.01)(X)
 
         #  Other hidden layers (if any)
@@ -100,6 +106,12 @@ class NN_standard(NN_base):
             )(X)
             if self.flag_batchnorm:
                 X = BatchNormalization()(X)
+
+            ### Dropout ####
+            # TODO flagdropout
+            #################
+            X = Dropout(0.42)(X)     
+            
             X = LeakyReLU(alpha=0.01)(X)
 
         # Output layer

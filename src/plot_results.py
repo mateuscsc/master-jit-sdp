@@ -42,7 +42,7 @@ def create_plots(list_filenames, list_legend_names, metric, y_axis_low=0.0, step
         y_axis_label = 'Specificity'
 
     plt.xlabel('Time Step', fontsize=size, weight='bold')
-    plt.xticks(np.arange(0, 55000 , 10000), fontsize=size)
+    plt.xticks(np.arange(0, 8000 , 1000), fontsize=size)
 
     plt.ylabel(y_axis_label, fontsize=size, weight='bold')
     plt.yticks(np.arange(y_axis_low, 1.000001, step), fontsize=size)
@@ -92,12 +92,10 @@ metrics = ['gmeans', 'recalls', 'specificities']
 for m in metrics:
     out_dir = out_dir_main + '/'#comparison/'
     filenames = [
-        #out_dir + 'areba20' + '_preq_' + m + '.txt',
-        # out_dir + 'areba2' + '_preq_' + m + '.txt',
-        # out_dir + 'oob' + '_preq_' + m + '.txt',
+        
         #out_dir + 'oob_single' + '_preq_' + m + '.txt',
         # out_dir + 'adaptive_cs' + '_preq_' + m + '.txt',
-        out_dir + 'oob_pool_single' + '_preq_' + m + '.txt',
+        out_dir + 'borb142' + '_preq_' + m + '.txt',
         # out_dir + 'baseline' + '_preq_' + m + '.txt',
     ]
-    create_plots(filenames, ['oob_pool_single', 'baseline'], metric=m, flag_legend=0, loc="lower left")
+    create_plots(filenames, ['borb142'], metric=m, flag_legend=0, loc="lower left")

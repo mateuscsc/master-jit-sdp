@@ -3,7 +3,7 @@ import pandas as pd
 from collections import deque
 from class_models import Baseline
 from time import sleep
-
+from copy import copy
 ###########################################################################################
 #                                Batch Oversampling Rate Boosting (BORB)                  #
 ###########################################################################################
@@ -13,29 +13,45 @@ class BORB(Baseline):
 	###############
     # Constructor #
     ###############
-    def __init__(self, model, borb_window_size,borb_lo,borb_l1,borb_fr1,borb_m,borb_sample_size,borb_ps_size):
+    def __init__(self, model, borb_window_size,borb_lo,borb_l1,borb_fr1,borb_m,
+                borb_sample_size,borb_ps_size,df_pos=None,df_neg=None, scores=None, restart_model=False):
         Baseline.__init__(self, model)
         #save model
         self.model = model
         # init
         self.window_size = borb_window_size
-        # buffer to store last (window_size) predictions
-        self.scores = deque(maxlen=self.window_size)
-
+                
         # Set  borb induced defect prediction rate
         self.borb_ir1 = borb_fr1
 
         # Set  borb fixed defect prediction rate
         self.borb_fr1 = borb_fr1
 
-        # Init scores with fr1 value
-        self._init_score()
 
-        # Init dataframe empty <positive instances>
-        self.df_pos = pd.DataFrame()
+        ### Init buffer score:
+        if not restart_model:
 
-        # Init dataframe empty <negative instances>
-        self.df_neg= pd.DataFrame()
+            # buffer to store last (window_size) predictions
+            self.scores = deque(maxlen=self.window_size)
+            # Init scores with fr1 value
+            self._init_score()
+
+        elif scores != None:
+            self.scores = scores
+        else:
+            raise ValueError("Impossible set buffer scores with None value .")
+
+        if not restart_model:    
+
+            # Init dataframe empty <positive instances>
+            self.df_pos = pd.DataFrame()
+
+            # Init dataframe empty <negative instances>
+            self.df_neg= pd.DataFrame()
+
+        else:
+            self.df_pos = df_pos
+            self.df_neg = df_neg
 
         # Init oversampling boosting factors 𝑜𝑏𝑓0 and 𝑜𝑏𝑓1
         self.obf_neg = 1
@@ -83,12 +99,6 @@ class BORB(Baseline):
     # API #
     #######
 
-    def restart_model(self):
-        Baseline.__init__(self, self.model)
-        # Restart oversampling boosting factors
-        self.obf_neg = 1
-        self.obf_pos = 1
-
     # Weighted.Sample(𝑇, 𝑜𝑏𝑓0, 𝑜𝑏𝑓1, 𝑠);
     def get_training_set(self):
 
@@ -103,6 +113,9 @@ class BORB(Baseline):
             s = train_set
         else:
             s =	self.borb_sample_size
+
+        # FIX: S s always    borb_sample_size 
+        s = self.borb_sample_size
 
         prob_per_neg_exemple = [self.prob_neg / self.df_neg.shape[0] ] * self.df_neg.shape[0]
         prob_per_pos_exemple = 	[self.prob_pos / self.df_pos.shape[0] ] * self.df_pos.shape[0]
@@ -122,8 +135,10 @@ class BORB(Baseline):
         # convert merged instances (dataframe) to np arrays
         x = _df_merge.values[:,:-1].copy().reshape(size,n_features)
         y = _df_merge.values[:,-1].copy().reshape(size, 1)
+
         # batch GD
-        self.model.change_minibatch_size(size)
+        # FIX 
+        # self.model.change_minibatch_size(size)
         return x, y
 
     def append_to_hist_data(self, new_instance):
@@ -171,14 +186,26 @@ class BORB(Baseline):
     def is_trainable(self,time_elapsed):
         if ( (self.df_neg.shape[0] >1) and (self.df_pos.shape[0] >1) ):
 
-            
-            if (time_elapsed // self.borb_ps_size ) > self.ps_step :
-                self.ps_step += 1
+            if time_elapsed % self.borb_ps_size == 0:
                 self.enable_train = True
                 return self.enable_train
-            else:
+            else :
                 self.enable_train = False
                 return self.enable_train
+            
+            # if (time_elapsed // self.borb_ps_size ) > self.ps_step :
+            #     self.ps_step += 1
+            #     self.enable_train = True
+            #     return self.enable_train
+            # else:
+            #     self.enable_train = False
+            #     return self.enable_train
+
+    def get_hist_instances(self):
+        return self.df_pos.copy(), self.df_neg.copy()  
+
+    def get_buffer_scores(self):
+        return copy(self.scores)
     				
 
 

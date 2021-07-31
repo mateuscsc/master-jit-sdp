@@ -51,7 +51,7 @@ def main():
     ########################
 
     # time steps & repetitions
-    repeats = 3  # number of repetitions
+    repeats = 30  # number of repetitions
     times = 30_000  # time steps per repetition
 
     # Dataset
@@ -90,22 +90,20 @@ def main():
     # fixed - do not alter the following
 
     # Baseline
-    learning_rate = 0.01
-    output_activation = 'sigmoid'
-    loss_function = 'binary_crossentropy'
-    weight_init = "he"
+    learning_rate = params["mlp_learning_rate"]
+    output_activation = 'sigmoid' # softmax sigmoid
+    loss_function =  'binary_crossentropy' #tf.keras.losses.MeanAbsoluteError()#  tf.keras.losses.MeanSquaredError()
+    weight_init = "he" # "glorot": he
     class_weights = {0: 1.0, 1: 1.0}
-    num_epochs = 1
-    minibatch_size = 1
-    layer_dims = [14, 8, 1] # features shape (1,14)
+    num_epochs = params["mlp_n_epochs"]
+    minibatch_size = params["mlp_batch_size"]
+    layer_dims = params["layer_dims"] #[14, 8, 1] # features shape (1,14)
 
 
     # OOB: number of classifiers
     ensemble_size = 20
 
-    # safety check
-    if method == 'oob_pool_single':
-        ensemble_size = 1
+    
 
 
     ################

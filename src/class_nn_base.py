@@ -78,11 +78,7 @@ class NN_base:
 
         y_hat = self.model.predict(x=x, verbose=0)
         y_hat_class =  np.around(y_hat) #np.greater(y_hat, th).astype(np.float16) #
-        # print('len batch_size',self.minibatch_size)
-        # print('#'*40)
-        # print('hat',y_hat)
-        # sleep(1)
-
+  
         return y_hat, y_hat_class
 
     ############
@@ -90,13 +86,7 @@ class NN_base:
     ############
 
     def training(self, x, y):
-        # self.minibatch_size = 1
-        # print('shape x treino',y.shape)
-        # print('#'*40)
-        # print('len batch_size',self.minibatch_size)
-        # print('#'*40)
-        # # print('len num_epochs',self.num_epochs)
-        # sleep(1)
+
         self.model.fit(
             x=x,
             y=self.cast_classes([y]),           # cast class to integer
